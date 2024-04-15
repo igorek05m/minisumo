@@ -162,4 +162,3 @@ start1.waitFor()
 while (True):
     decide()
     time.sleep(0.001)
-
