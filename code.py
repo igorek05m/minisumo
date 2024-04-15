@@ -6,11 +6,12 @@ boot1 = Boot1()
 led1, led2 = Led1(), Led2()
 ledRgb1 = LedRgb1()
 prawyCzujnik, glownyCzujnik, lewyCzujnik, dist4 = dists_init()
-lewaZiemia, prawaZiemia, grd3, grd4 = grds_init()
+lewaZiemia, prawaZiemia, tylZiemia, grd4 = grds_init()
 lewySilnik, prawySilnik = motors_init()
 vBat = VBat()
 
 GRD_TRESHOLD = 0.7
+BACKGRD_TESHOLD = 1.2
 DIST_TRESHOLD = 0.8
 SEARCH_POWER = 0.2
 ATTACK_POWER = 1
@@ -58,7 +59,7 @@ def tyl():
 
 def tylLewo():
     stop()
-    lewySilnik.power = BACKWARDS_POWER/3
+    lewySilnik.power = BACKWARDS_POWER/4
     lewySilnik.backward()
     prawySilnik.power = BACKWARDS_POWER
     prawySilnik.backward()
@@ -68,7 +69,7 @@ def tylPrawo():
     stop()
     lewySilnik.power = BACKWARDS_POWER
     lewySilnik.backward()
-    prawySilnik.power = BACKWARDS_POWER/3
+    prawySilnik.power = BACKWARDS_POWER/4
     prawySilnik.backward()
     ledRgb1.value = Color.YELLOW
 
@@ -110,24 +111,33 @@ def decide():
 
     g1 = lewaZiemia.value < GRD_TRESHOLD
     g2 = prawaZiemia.value < GRD_TRESHOLD
-
-    print('l ', lewaZiemia.value, g1, 'p ', prawaZiemia.value, g2)
+    g3 = tylZiemia.value < BACKGRD_TESHOLD
 
     led1.value = g1
     led2.value = g2
     
-    print('prawy: ', prawyCzujnik.value, 'srodkowy: ', glownyCzujnik.value, 'lewy: ',  lewyCzujnik.value)
+    print(tylZiemia.value)
     
-    if g1 or g2:
+    if g1 or g2 or g3:
         if g1 and g2:
             tylPrawo()
-            time.sleep(0.5) 
+            time.sleep(0.3)
+        elif g3:
+            prosto()
         elif g1:
             tylLewo()
-            time.sleep(0.5)
+            time.sleep(0.3)
         elif g2:
             tylPrawo()
-            time.sleep(0.5)
+            time.sleep(0.3)
+        elif g2 and g3:
+            lewo()
+            time.sleep(0.1)
+        elif g1 and g3:
+            prawo()
+            time.sleep(0.1)
+        elif g1 and g2 and g3:
+            prosto()
     elif d1 or d2 or d3:
         # na wprost
         if d2:
