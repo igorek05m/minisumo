@@ -7,7 +7,7 @@ led1, led2 = Led1(), Led2()
 ledRgb1 = LedRgb1()
 prawyCzujnik, glownyCzujnik, lewyCzujnik, dist4 = dists_init()
 lewaZiemia, prawaZiemia, grd3, grd4 = grds_init()
-lewySilnik, prawySilnik= motors_init()
+lewySilnik, prawySilnik = motors_init()
 vBat = VBat()
 
 GRD_TRESHOLD = 0.7
