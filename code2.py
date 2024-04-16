@@ -13,79 +13,121 @@ vBat = VBat()
 GRD_TRESHOLD = 0.7
 BACKGRD_TESHOLD = 1.2
 DIST_TRESHOLD = 0.8
-SEARCH_POWER = 0.2
+SEARCH_POWER = 0.4
 ATTACK_POWER = 1
-BACKWARDS_POWER = 0.5
+BACKWARDS_POWER = 0.8
 
-def stop():
-    lewySilnik.stop()
-    prawySilnik.stop()
-    ledRgb1.value = Color.GREEN
+delta_time = 0.05
 
-def prosto():
-    lewySilnik.power = SEARCH_POWER
-    lewySilnik.forward()
-    prawySilnik.power = SEARCH_POWER
-    prawySilnik.forward()
+state = None
 
-def prostoAtak():
-    lewySilnik.power = ATTACK_POWER
-    lewySilnik.forward()
-    prawySilnik.power = ATTACK_POWER
-    prawySilnik.forward()
-    ledRgb1.value = Color.RED
+class State:
+    def Update(self):
+        pass
+    def __str__(self):
+        return self.__class__.__name__
+    def ChangeState(self):
+        global state
+        for condition, next_state in self.stateTransitions:
+            if condition():
+                state = next_state()
 
-def prostoPrawo():
-    lewySilnik.power = ATTACK_POWER
-    lewySilnik.forward()
-    prawySilnik.power = ATTACK_POWER/4
-    prawySilnik.forward()
-    ledRgb1.value = Color.WHITE
+class SearchState(State):
+    def __init__(self):
+        self.stateTransitions = [
+            ((lambda: (d1 or d2 or d3)), (lambda: AttackState())),
+            ((lambda: (g2 and not (g1 or g3))), (lambda: MovingBackward(0.6, 'right'))),
+            ((lambda: (g1 and not (g2 or g3))), (lambda: MovingBackward(0.6, 'left'))),
+            ((lambda: ((g1 and g2) and not g3)), (lambda: MovingBackward(0.6, 'right'))),
+            #((lambda: (g3 and not (g1 or g2))), (lambda: AttackState())),
+            #((lambda: (g3 and g1) and not g2), (lambda: LineAndSideDetected(0.4, 'right'))),
+            #((lambda: (g3 and g2) and not g1), (lambda: LineAndSideDetected(0.4, 'left'))),
+            #((lambda: (g3 and g2) and not g1), (lambda: LineAndSideDetected(0.4, 'left')))
+        ]
+    def Update(self):
+        ledRgb1.value = Color.CYAN
+        lewySilnik.power = SEARCH_POWER
+        prawySilnik.power = SEARCH_POWER
+        lewySilnik.forward()
+        prawySilnik.forward()
 
-def prostoLewo():
-    lewySilnik.power = ATTACK_POWER/4
-    lewySilnik.forward()
-    prawySilnik.power = ATTACK_POWER
-    prawySilnik.forward()
-    ledRgb1.value = Color.WHITE
+class AttackState(State):
+    def __init__(self):
+        self.stateTransitions = [
+            ((lambda: not (d1 or d2 or d3)), (lambda: SearchState()))
+        ]
+    def Update(self):
+        ledRgb1.value = Color.RED
+        if d2:
+            lewySilnik.forward()
+            prawySilnik.forward()
+            lewySilnik.power = ATTACK_POWER/2
+            prawySilnik.power = ATTACK_POWER
+            time.sleep(0.05)
+        elif d1:
+            lewySilnik.forward()
+            prawySilnik.backward()
+            lewySilnik.power = ATTACK_POWER
+            prawySilnik.power = ATTACK_POWER/2
+            time.sleep(0.05)
+        elif d3:
+            lewySilnik.backward()
+            prawySilnik.forward()
+            lewySilnik.power = ATTACK_POWER
+            prawySilnik.power = ATTACK_POWER
+            time.sleep(0.05)
 
-def tyl():
-    stop()
-    lewySilnik.power = BACKWARDS_POWER
-    lewySilnik.backward()
-    prawySilnik.power = BACKWARDS_POWER
-    prawySilnik.backward()
-    ledRgb1.value = Color.YELLOW
+# class LineAndSideDetected(State):
+#     def __init__(self, time_to_change, direction):
+#         self.time_to_change = time_to_change
+#         self.direction = direction
+#         self.stateTransitions = [
+#             ((lambda: (self.time_to_change <= 0 and not (d1 or d2 or d3))), (lambda: SearchState())),
+#             ((lambda: (d1 or d2 or d3)), (lambda: AttackState()))
+#         ]
+#     def Update(self):
+#         self.time_to_change -= delta_time
+#         lewySilnik.stop()
+#         prawySilnik.stop()
+#         if self.direction == 'right':
+#             lewySilnik.power = SEARCH_POWER
+#             lewySilnik.forward()
+#             prawySilnik.power = SEARCH_POWER
+#             prawySilnik.backward()
+#             ledRgb1.value = Color.PURPLE
+#         elif self.direction == 'left':
+#             lewySilnik.power = SEARCH_POWER
+#             lewySilnik.backward()
+#             prawySilnik.power = SEARCH_POWER
+#             prawySilnik.forward()
+#             ledRgb1.value = Color.PURPLE
 
-def tylLewo():
-    stop()
-    lewySilnik.power = BACKWARDS_POWER/4
-    lewySilnik.backward()
-    prawySilnik.power = BACKWARDS_POWER
-    prawySilnik.backward()
-    ledRgb1.value = Color.YELLOW
+class MovingBackward(State):
+    def __init__(self, time_to_change, direction):
+        self.time_to_change = time_to_change
+        self.direction = direction
+        self.stateTransitions = [
+            ((lambda: (self.time_to_change <= 0 and not (g1 or g2 or g3))), (lambda: SearchState())),
+            ((lambda: (d1 or d2 or d3)), (lambda: AttackState()))
+        ]
+    def Update(self):
+        self.time_to_change -= delta_time
+        lewySilnik.stop()
+        prawySilnik.stop()
+        if self.direction == 'left':
+            lewySilnik.power = BACKWARDS_POWER/7
+            lewySilnik.backward()
+            prawySilnik.power = BACKWARDS_POWER*1.2
+            prawySilnik.backward()
+            ledRgb1.value = Color.YELLOW
+        elif self.direction == 'right':
+            lewySilnik.power = BACKWARDS_POWER*1.2
+            lewySilnik.backward()
+            prawySilnik.power = BACKWARDS_POWER/7
+            prawySilnik.backward()
+            ledRgb1.value = Color.YELLOW
 
-def tylPrawo():
-    stop()
-    lewySilnik.power = BACKWARDS_POWER
-    lewySilnik.backward()
-    prawySilnik.power = BACKWARDS_POWER/4
-    prawySilnik.backward()
-    ledRgb1.value = Color.YELLOW
-
-def lewo():
-    lewySilnik.power = SEARCH_POWER
-    lewySilnik.backward()
-    prawySilnik.power = SEARCH_POWER
-    prawySilnik.forward()
-    ledRgb1.value = Color.PURPLE
-
-def prawo():
-    lewySilnik.power = SEARCH_POWER
-    lewySilnik.forward()
-    prawySilnik.power = SEARCH_POWER
-    prawySilnik.backward()
-    ledRgb1.value = Color.PURPLE
+state: State = SearchState()
 
 def odliczanie():
     for i in range(10):
@@ -104,10 +146,16 @@ def odliczanie():
         ledRgb1.value = (50 - i*5, 200 + i*5, 0)
         time.sleep(0.1)
 
-def decide():
-    d1 = prawyCzujnik.value > DIST_TRESHOLD
+ledRgb1.value = Color.CYAN
+
+start1.waitFor()
+
+# odliczanie()
+
+while (True):
+    d1 = prawyCzujnik.value > DIST_TRESHOLD + 0.1
     d2 = glownyCzujnik.value > DIST_TRESHOLD
-    d3 = lewyCzujnik.value > DIST_TRESHOLD
+    d3 = lewyCzujnik.value > DIST_TRESHOLD + 0.1
 
     g1 = lewaZiemia.value < GRD_TRESHOLD
     g2 = prawaZiemia.value < GRD_TRESHOLD
@@ -115,50 +163,9 @@ def decide():
 
     led1.value = g1
     led2.value = g2
-    
-    print(tylZiemia.value)
-    
-    if g1 or g2 or g3:
-        if g1 and g2:
-            tylPrawo()
-            time.sleep(0.3)
-        elif g3:
-            prosto()
-        elif g1:
-            tylLewo()
-            time.sleep(0.3)
-        elif g2:
-            tylPrawo()
-            time.sleep(0.3)
-        elif g2 and g3:
-            lewo()
-            time.sleep(0.1)
-        elif g1 and g3:
-            prawo()
-            time.sleep(0.1)
-        elif g1 and g2 and g3:
-            prosto()
-    elif d1 or d2 or d3:
-        # na wprost
-        if d2:
-            prostoAtak()
-            time.sleep(0.2)
-        # po lewej
-        elif d3:
-            lewo()
-            time.sleep(0.2)
-        # po prawej
-        elif d1:
-            prawo()
-            time.sleep(0.2)
-    else:
-        prostoLewo()
 
-ledRgb1.value = Color.CYAN
-start1.waitFor()
+    state.ChangeState()
+    state.Update()
+    time.sleep(0.01)
 
-#countdown()
-
-while (True):
-    decide()
-    time.sleep(0.001)
+    print(state)
