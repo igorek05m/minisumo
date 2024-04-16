@@ -77,6 +77,14 @@ class AttackState(State):
             prawySilnik.power = ATTACK_POWER
             time.sleep(0.05)
 
+def AttackRotatingState(State): # po 15s-20s zlaczenia
+    def __init__(self):
+        self.stateTransitions = [
+            ((lambda: not (d1 or d2 or d3)), (lambda: SearchState()))
+        ]
+    def Update(self):
+        ledRgb1.value = Color.BRICK
+
 # class LineAndSideDetected(State):
 #     def __init__(self, time_to_change, direction):
 #         self.time_to_change = time_to_change
@@ -126,7 +134,7 @@ class MovingBackward(State):
             prawySilnik.power = BACKWARDS_POWER/7
             prawySilnik.backward()
 
-def DrukarkaHP(State):
+def DrukarkaHP(State): # po 20/25s bezczynnej jazdy
     def __init__(self):
         self.stateTransitions = [
             ((lambda: (d1 or d2 or d3)), (lambda: AttackState())),
