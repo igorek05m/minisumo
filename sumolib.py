@@ -13,6 +13,7 @@ class Color:
     CYAN = (0, 255, 255)
     PURPLE = (180, 0, 255)
     WHITE = (255, 255, 255)
+    BRICK = (178, 34, 34)
 
 class Operation:
     STOP = 'Stop'
